@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using System.IO;  // Add this for File operations
 
 namespace RigelAI
 {
@@ -14,7 +15,6 @@ namespace RigelAI
         private static readonly string model = "gemini-2.0-flash";
         private static readonly string endpoint = $"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={apiKey}";
 
-        // Chat history for context
         private static readonly List<object> conversationHistory = new List<object>();
 
         static async Task Main(string[] args)
@@ -28,15 +28,29 @@ namespace RigelAI
             Console.WriteLine("Welcome to Rigel AI (Gemini Mode)");
             Console.WriteLine("Type 'exit' to quit.\n");
 
+            // Read the persona text file and add it to conversation history
+            try
+            {
+                string personaText = File.ReadAllText("persona.txt");
+                conversationHistory.Add(new
+                {
+                    role = "user",
+                    parts = new[] { new { text = personaText } }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("❌ Error reading persona.txt: " + ex.Message);
+                return;
+            }
+
             while (true)
             {
-                Console.Write("You: ");
                 var userInput = Console.ReadLine()?.Trim();
 
                 if (string.IsNullOrWhiteSpace(userInput)) continue;
                 if (userInput.Equals("exit", StringComparison.OrdinalIgnoreCase)) break;
 
-                // Add user's message to history
                 conversationHistory.Add(new
                 {
                     role = "user",
@@ -44,7 +58,7 @@ namespace RigelAI
                 });
 
                 string reply = await GetGeminiReply();
-                Console.WriteLine("Rigel: " + reply);
+                Console.WriteLine(reply);
             }
         }
 
@@ -73,7 +87,6 @@ namespace RigelAI
                 dynamic result = JsonConvert.DeserializeObject(jsonResponse);
                 string reply = result?.candidates[0]?.content?.parts[0]?.text?.ToString();
 
-                // Add Gemini's response to history
                 conversationHistory.Add(new
                 {
                     role = "model",
