@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace RigelAI
+namespace RigelAI.Core
 {
     public static class GeminiClient
     {

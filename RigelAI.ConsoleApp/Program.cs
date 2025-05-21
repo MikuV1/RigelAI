@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using System.IO;  // Add this for File operations
+using RigelAI.Core;
 
 namespace RigelAI
 {
@@ -28,21 +28,18 @@ namespace RigelAI
             Console.WriteLine("Welcome to Rigel AI (Gemini Mode)");
             Console.WriteLine("Type 'exit' to quit.\n");
 
-            // Read the persona text file and add it to conversation history
-            try
+            // Load persona via PersonaManager
+            bool loaded = await PersonaManager.LoadPersonaAsync();
+            if (!loaded)
             {
-                string personaText = File.ReadAllText("persona.txt");
-                conversationHistory.Add(new
-                {
-                    role = "user",
-                    parts = new[] { new { text = personaText } }
-                });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("❌ Error reading persona.txt: " + ex.Message);
                 return;
             }
+
+            conversationHistory.Add(new
+            {
+                role = "user",
+                parts = new[] { new { text = PersonaManager.GetPersonaText() } }
+            });
 
             while (true)
             {

@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36109.1 d17.14
+VisualStudioVersion = 17.14.36109.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RigelAI", "RigelAI\RigelAI.csproj", "{6E6A0E97-3A72-4F28-9BF4-BFF4FE056D70}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RigelAI.Core", "RigelAI.Core\RigelAI.Core.csproj", "{55931F18-FC93-495F-A2C9-16A5C47E83BE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RigelAI.ConsoleApp", "RigelAI.ConsoleApp\RigelAI.ConsoleApp.csproj", "{66070483-21C8-4415-ABF3-75D875D18DA0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +13,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{6E6A0E97-3A72-4F28-9BF4-BFF4FE056D70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6E6A0E97-3A72-4F28-9BF4-BFF4FE056D70}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6E6A0E97-3A72-4F28-9BF4-BFF4FE056D70}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6E6A0E97-3A72-4F28-9BF4-BFF4FE056D70}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55931F18-FC93-495F-A2C9-16A5C47E83BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{55931F18-FC93-495F-A2C9-16A5C47E83BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{55931F18-FC93-495F-A2C9-16A5C47E83BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{55931F18-FC93-495F-A2C9-16A5C47E83BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66070483-21C8-4415-ABF3-75D875D18DA0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66070483-21C8-4415-ABF3-75D875D18DA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66070483-21C8-4415-ABF3-75D875D18DA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66070483-21C8-4415-ABF3-75D875D18DA0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
