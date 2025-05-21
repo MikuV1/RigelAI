@@ -14,29 +14,55 @@ namespace RigelAI.Core
         private static readonly string Model = "gemini-2.0-flash-lite";
         private static readonly string Endpoint = $"https://generativelanguage.googleapis.com/v1/models/{Model}:generateContent?key={ApiKey}";
 
-        private static readonly List<object> chatHistory = new List<object>();
+        private static readonly List<object> conversationHistory = new List<object>();
 
-        // Internal property to expose chatHistory count for testing
-        public static int ChatHistoryCount => chatHistory.Count;
+        public static int ChatHistoryCount => conversationHistory.Count;
+
+        public static async Task<bool> LoadPersonaAsync(string filePath = "persona.txt")
+        {
+            // This method should delegate to PersonaManager
+            return await PersonaManager.LoadPersonaAsync(filePath);
+        }
+
+        public static string GetPersonaText()
+        {
+            return PersonaManager.GetPersonaText();
+        }
+
+        public static void ResetChat()
+        {
+            conversationHistory.Clear();
+        }
 
         public static async Task<string> ChatAsync(string userMessage)
         {
             if (string.IsNullOrEmpty(ApiKey))
                 return "❌ API key missing.";
 
-            // Add user message to chat history
-            chatHistory.Add(new
+            if (conversationHistory.Count == 0)
             {
-                author = "user",
-                content = new { text = userMessage }
+                // Initialize conversation with persona text if available
+                string persona = GetPersonaText();
+                if (!string.IsNullOrWhiteSpace(persona))
+                {
+                    conversationHistory.Add(new
+                    {
+                        role = "user",
+                        parts = new[] { new { text = persona } }
+                    });
+                }
+            }
+
+            // Add user message to conversation history
+            conversationHistory.Add(new
+            {
+                role = "user",
+                parts = new[] { new { text = userMessage } }
             });
 
             var payload = new
             {
-                prompt = new
-                {
-                    messages = chatHistory
-                }
+                contents = conversationHistory
             };
 
             var json = JsonConvert.SerializeObject(payload);
@@ -53,26 +79,26 @@ namespace RigelAI.Core
                 }
 
                 dynamic result = JsonConvert.DeserializeObject(responseString);
-                string botReply = result?.candidates?[0]?.content?.text?.ToString();
+                string botReply = result?.candidates?[0]?.content?.parts?[0]?.text?.ToString();
 
-                // Add bot reply to chat history
-                chatHistory.Add(new
+                if (!string.IsNullOrWhiteSpace(botReply))
                 {
-                    author = "assistant",
-                    content = new { text = botReply }
-                });
-
-                return botReply ?? "⚠️ Empty response.";
+                    conversationHistory.Add(new
+                    {
+                        role = "model",
+                        parts = new[] { new { text = botReply } }
+                    });
+                    return botReply;
+                }
+                else
+                {
+                    return "⚠️ Empty response.";
+                }
             }
             catch (Exception ex)
             {
                 return $"❌ Error: {ex.Message}";
             }
-        }
-
-        public static void ResetChat()
-        {
-            chatHistory.Clear();
         }
     }
 }

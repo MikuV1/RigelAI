@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RigelAI.ConsoleApp", "Rigel
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RigelAI.Tests", "RigelAI.Tests\RigelAI.Tests.csproj", "{520F2C7A-5111-44D1-9287-B0CB5DA4AE6A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RigelAI.TelegramBot", "RigelAI.TelegramBot\RigelAI.TelegramBot.csproj", "{DA0D83A8-1327-4440-85F0-D073EBC1624F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{520F2C7A-5111-44D1-9287-B0CB5DA4AE6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{520F2C7A-5111-44D1-9287-B0CB5DA4AE6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{520F2C7A-5111-44D1-9287-B0CB5DA4AE6A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA0D83A8-1327-4440-85F0-D073EBC1624F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA0D83A8-1327-4440-85F0-D073EBC1624F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA0D83A8-1327-4440-85F0-D073EBC1624F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA0D83A8-1327-4440-85F0-D073EBC1624F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
