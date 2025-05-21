@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RigelAI.Core", "RigelAI.Cor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RigelAI.ConsoleApp", "RigelAI.ConsoleApp\RigelAI.ConsoleApp.csproj", "{66070483-21C8-4415-ABF3-75D875D18DA0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RigelAI.Tests", "RigelAI.Tests\RigelAI.Tests.csproj", "{520F2C7A-5111-44D1-9287-B0CB5DA4AE6A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{66070483-21C8-4415-ABF3-75D875D18DA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{66070483-21C8-4415-ABF3-75D875D18DA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{66070483-21C8-4415-ABF3-75D875D18DA0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{520F2C7A-5111-44D1-9287-B0CB5DA4AE6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{520F2C7A-5111-44D1-9287-B0CB5DA4AE6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{520F2C7A-5111-44D1-9287-B0CB5DA4AE6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{520F2C7A-5111-44D1-9287-B0CB5DA4AE6A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

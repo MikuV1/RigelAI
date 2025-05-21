@@ -11,10 +11,13 @@ namespace RigelAI.Core
     {
         private static readonly HttpClient client = new HttpClient();
         private static readonly string ApiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
-        private static readonly string Model = "gemini-2.0-pro";
+        private static readonly string Model = "gemini-2.0-flash-lite";
         private static readonly string Endpoint = $"https://generativelanguage.googleapis.com/v1/models/{Model}:generateContent?key={ApiKey}";
 
         private static readonly List<object> chatHistory = new List<object>();
+
+        // Internal property to expose chatHistory count for testing
+        public static int ChatHistoryCount => chatHistory.Count;
 
         public static async Task<string> ChatAsync(string userMessage)
         {

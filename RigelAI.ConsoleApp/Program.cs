@@ -12,13 +12,16 @@ namespace RigelAI
     {
         private static readonly HttpClient client = new HttpClient();
         private static readonly string apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
-        private static readonly string model = "gemini-2.0-flash";
+        private static readonly string model = "gemini-2.0-flash-lite";
         private static readonly string endpoint = $"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={apiKey}";
 
         private static readonly List<object> conversationHistory = new List<object>();
 
         static async Task Main(string[] args)
         {
+            // Set console output to UTF8 to correctly display emojis and special chars
+            Console.OutputEncoding = Encoding.UTF8;
+
             if (string.IsNullOrEmpty(apiKey))
             {
                 Console.WriteLine("❌ API key not found. Please set the GEMINI_API_KEY environment variable.");
