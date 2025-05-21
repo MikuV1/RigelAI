@@ -9,49 +9,21 @@ namespace RigelAI.Core
 {
     public static class GeminiClient
     {
-        private static readonly HttpClient client = new HttpClient();
-        private static readonly string ApiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+        private static HttpClient client = new HttpClient();
         private static readonly string Model = "gemini-2.0-flash-lite";
-        private static readonly string Endpoint = $"https://generativelanguage.googleapis.com/v1/models/{Model}:generateContent?key={ApiKey}";
 
-        private static readonly List<object> conversationHistory = new List<object>();
-
-        public static int ChatHistoryCount => conversationHistory.Count;
-
-        public static async Task<bool> LoadPersonaAsync(string filePath = "persona.txt")
+        public static void SetHttpClient(HttpClient clientInstance)
         {
-            // This method should delegate to PersonaManager
-            return await PersonaManager.LoadPersonaAsync(filePath);
+            client = clientInstance;
         }
 
-        public static string GetPersonaText()
+        public static async Task<string> ChatAsync(string userMessage, List<object> conversationHistory)
         {
-            return PersonaManager.GetPersonaText();
-        }
-
-        public static void ResetChat()
-        {
-            conversationHistory.Clear();
-        }
-
-        public static async Task<string> ChatAsync(string userMessage)
-        {
-            if (string.IsNullOrEmpty(ApiKey))
+            var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+            if (string.IsNullOrEmpty(apiKey))
                 return "❌ API key missing.";
 
-            if (conversationHistory.Count == 0)
-            {
-                // Initialize conversation with persona text if available
-                string persona = GetPersonaText();
-                if (!string.IsNullOrWhiteSpace(persona))
-                {
-                    conversationHistory.Add(new
-                    {
-                        role = "user",
-                        parts = new[] { new { text = persona } }
-                    });
-                }
-            }
+            var endpoint = $"https://generativelanguage.googleapis.com/v1/models/{Model}:generateContent?key={apiKey}";
 
             // Add user message to conversation history
             conversationHistory.Add(new
@@ -70,7 +42,7 @@ namespace RigelAI.Core
 
             try
             {
-                var response = await client.PostAsync(Endpoint, content);
+                var response = await client.PostAsync(endpoint, content);
                 var responseString = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)

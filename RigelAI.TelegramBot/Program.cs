@@ -1,4 +1,7 @@
-﻿using RigelAI.Core;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using RigelAI.Core;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -16,13 +19,7 @@ class Program
         }
 
         var botClient = new TelegramBotClient(token);
-
         using var cts = new CancellationTokenSource();
-
-        var receiverOptions = new ReceiverOptions
-        {
-            AllowedUpdates = Array.Empty<UpdateType>() // Receive all update types
-        };
 
         var chatService = new RigelChatService();
         bool personaLoaded = await chatService.InitializeAsync();
@@ -34,7 +31,7 @@ class Program
         botClient.StartReceiving(
             updateHandler: HandleUpdateAsync,
             errorHandler: HandleErrorAsync,
-            receiverOptions: receiverOptions,
+            receiverOptions: new ReceiverOptions { AllowedUpdates = Array.Empty<UpdateType>() },
             cancellationToken: cts.Token);
 
         var me = await botClient.SendRequest<Telegram.Bot.Types.User>(new Telegram.Bot.Requests.GetMeRequest(), cts.Token);
@@ -53,7 +50,7 @@ class Program
             var chatId = update.Message.Chat.Id;
             Console.WriteLine($"Received from {chatId}: {messageText}");
 
-            string response = await chatService.GetResponseAsync(messageText);
+            string response = await chatService.GetResponseAsync(chatId, messageText); ;
 
             await client.SendRequest(
                 new Telegram.Bot.Requests.SendMessageRequest
