@@ -1,48 +1,141 @@
 ﻿using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
+using Moq;
+using Moq.Protected;
+using Newtonsoft.Json;
 using RigelAI.Core;
+using Xunit;
 
 public class GeminiClientTests
 {
     [Fact]
-    public async Task ChatAsync_NoApiKey_ReturnsError()
+    public async Task ChatAsync_ReturnsBotReply_AndUpdatesHistory()
     {
-        var originalKey = System.Environment.GetEnvironmentVariable("GEMINI_API_KEY");
-        System.Environment.SetEnvironmentVariable("GEMINI_API_KEY", null);
+        // Arrange
+        var userMessage = "Hello, bot!";
+        var conversationHistory = new List<object>();
 
-        var response = await GeminiClient.ChatAsync("Hello");
+        // Fake Gemini API JSON response
+        var fakeResponse = new
+        {
+            candidates = new[]
+            {
+                new
+                {
+                    content = new
+                    {
+                        parts = new[]
+                        {
+                            new { text = "Hi, human!" }
+                        }
+                    }
+                }
+            }
+        };
+        var fakeJson = JsonConvert.SerializeObject(fakeResponse);
 
-        System.Environment.SetEnvironmentVariable("GEMINI_API_KEY", originalKey);
+        // Mock HttpMessageHandler to fake HTTP response
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(fakeJson)
+            });
 
-        Assert.Contains("API key missing", response);
+        var httpClient = new HttpClient(handlerMock.Object);
+
+        // Inject mocked HttpClient into GeminiClient
+        GeminiClient.SetHttpClient(httpClient);
+
+        // Set a dummy API key environment variable for test
+        System.Environment.SetEnvironmentVariable("GEMINI_API_KEY", "dummy-key");
+
+        // Act
+        var botReply = await GeminiClient.ChatAsync(userMessage, conversationHistory);
+
+        // Assert returned reply is as expected
+        Assert.Equal("Hi, human!", botReply);
+
+        // Assert user message was added to conversation history
+        Assert.Contains(conversationHistory, item =>
+        {
+            dynamic msg = item;
+            try
+            {
+                return msg.role == "user" && msg.parts[0].text == userMessage;
+            }
+            catch
+            {
+                return false;
+            }
+        });
+
+        // Assert bot reply was added to conversation history
+        Assert.Contains(conversationHistory, item =>
+        {
+            dynamic msg = item;
+            try
+            {
+                return msg.role == "model" && msg.parts[0].text == "Hi, human!";
+            }
+            catch
+            {
+                return false;
+            }
+        });
     }
 
     [Fact]
-    public void ResetChat_ClearsHistory()
+    public async Task ChatAsync_ReturnsErrorMessage_WhenApiKeyMissing()
     {
-        // Clear chat first
-        GeminiClient.ResetChat();
+        // Arrange
+        var userMessage = "Test message";
+        var conversationHistory = new List<object>();
 
-        // Use reflection to get private conversationHistory list
-        var conversationHistoryField = typeof(GeminiClient).GetField("conversationHistory",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        // Remove API key environment variable
+        System.Environment.SetEnvironmentVariable("GEMINI_API_KEY", null);
 
-        var conversationHistory = conversationHistoryField?.GetValue(null) as List<object>;
-        Assert.NotNull(conversationHistory);
+        // Act
+        var result = await GeminiClient.ChatAsync(userMessage, conversationHistory);
 
-        // Add dummy message to simulate chat history
-        conversationHistory.Add(new
-        {
-            role = "user",
-            parts = new[] { new { text = "Test message" } }
-        });
+        // Assert
+        Assert.Equal("❌ API key missing.", result);
+    }
 
-        // Verify chat history has at least one entry
-        Assert.True(GeminiClient.ChatHistoryCount > 0);
+    [Fact]
+    public async Task ChatAsync_ReturnsErrorMessage_OnHttpFailure()
+    {
+        // Arrange
+        var userMessage = "Hi";
+        var conversationHistory = new List<object>();
 
-        // Reset and verify cleared
-        GeminiClient.ResetChat();
-        Assert.Equal(0, GeminiClient.ChatHistoryCount);
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.BadRequest,
+                Content = new StringContent("Bad request")
+            });
+
+        var httpClient = new HttpClient(handlerMock.Object);
+        GeminiClient.SetHttpClient(httpClient);
+
+        System.Environment.SetEnvironmentVariable("GEMINI_API_KEY", "dummy-key");
+
+        // Act
+        var result = await GeminiClient.ChatAsync(userMessage, conversationHistory);
+
+        // Assert the error message includes status code
+        Assert.Contains("❌ Gemini API error:", result);
     }
 }

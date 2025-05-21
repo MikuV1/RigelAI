@@ -1,33 +1,51 @@
 ﻿using System;
-using System.Text;
 using System.Threading.Tasks;
 using RigelAI.Core;
 
-namespace RigelAI
+class Program
 {
-    class Program
+    static async Task Main(string[] args)
     {
-        static async Task Main(string[] args)
+        Console.WriteLine("🔹 RigelAI Console Chatbot 🔹");
+
+        var chatService = new RigelChatService();
+        bool personaLoaded = await chatService.InitializeAsync();
+
+        if (!personaLoaded)
         {
-            Console.OutputEncoding = Encoding.UTF8;
-
-            Console.WriteLine("Welcome to Rigel AI (Gemini Mode)");
-            Console.WriteLine("Type 'exit' to quit.\n");
-
-            bool loaded = await GeminiClient.LoadPersonaAsync();
-            if (!loaded) return;
-
-            GeminiClient.ResetChat();
-
-            while (true)
-            {
-                var userInput = Console.ReadLine()?.Trim();
-                if (string.IsNullOrWhiteSpace(userInput)) continue;
-                if (userInput.Equals("exit", StringComparison.OrdinalIgnoreCase)) break;
-
-                string response = await GeminiClient.ChatAsync(userInput);
-                Console.WriteLine(response);
-            }
+            Console.WriteLine("❌ Failed to load persona.txt.");
         }
+        else
+        {
+            Console.WriteLine("✅ Persona loaded successfully.");
+        }
+
+        Console.WriteLine("Type your message below. Type 'reset' to clear history. Type 'exit' to quit.");
+
+        long userId = 0; // Default single-user ID for console app
+
+        while (true)
+        {
+            Console.Write("> ");
+            string input = Console.ReadLine()?.Trim();
+
+            if (string.IsNullOrWhiteSpace(input))
+                continue;
+
+            if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
+                break;
+
+            if (input.Equals("reset", StringComparison.OrdinalIgnoreCase))
+            {
+                chatService.ResetUserHistory(userId);
+                Console.WriteLine("🌀 Chat history reset.");
+                continue;
+            }
+
+            string response = await chatService.GetResponseAsync(userId, input);
+            Console.WriteLine($"🤖 {response}");
+        }
+
+        Console.WriteLine("👋 Goodbye!");
     }
 }
