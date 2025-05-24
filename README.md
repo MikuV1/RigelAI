@@ -86,7 +86,7 @@ dotnet run
 
 ## 🧑‍💻 Credits
 
-Built with ❤️ by [YourName] using:
+Built with ❤️ by MikuV1 using:
 - [.NET 9.0](https://dotnet.microsoft.com)
 - [Telegram.Bot](https://github.com/TelegramBots/Telegram.Bot)
 - [Gemini LLM API](https://ai.google.dev/)
