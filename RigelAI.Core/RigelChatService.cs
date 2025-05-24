@@ -21,19 +21,61 @@ namespace RigelAI.Core
 
         public async Task<string> GetResponseAsync(long userId, string userMessage)
         {
-            var history = UserConversations.GetOrAdd(userId, _ => new List<object>());
+            var history = GetUserHistory(userId);
 
-            // Inject persona only on first interaction
-            if (history.Count == 0 && !string.IsNullOrWhiteSpace(personaText))
+            history.Add(new
+            {
+                role = "user",
+                parts = new[] { new { text = userMessage } }
+            });
+
+            var reply = await GeminiClient.ChatAsync(userMessage, history);
+
+            if (!string.IsNullOrWhiteSpace(reply))
             {
                 history.Add(new
                 {
-                    role = "user",
-                    parts = new[] { new { text = personaText } }
+                    role = "model",
+                    parts = new[] { new { text = reply } }
                 });
             }
 
-            return await GeminiClient.ChatAsync(userMessage, history);
+            return reply;
+        }
+
+        public async Task<string> GetResponseFromHistoryAsync(long userId, List<object> updatedHistory)
+        {
+            UserConversations[userId] = updatedHistory;
+
+            var reply = await GeminiClient.ChatWithPartsAsync(updatedHistory);
+
+            if (!string.IsNullOrWhiteSpace(reply))
+            {
+                updatedHistory.Add(new
+                {
+                    role = "model",
+                    parts = new[] { new { text = reply } }
+                });
+            }
+
+            return reply;
+        }
+
+        public List<object> GetUserHistory(long userId)
+        {
+            return UserConversations.GetOrAdd(userId, id =>
+            {
+                var history = new List<object>();
+                if (!string.IsNullOrWhiteSpace(personaText))
+                {
+                    history.Add(new
+                    {
+                        role = "user",
+                        parts = new[] { new { text = personaText } }
+                    });
+                }
+                return history;
+            });
         }
 
         public void ResetUserHistory(long userId)
