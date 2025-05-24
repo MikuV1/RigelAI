@@ -12,7 +12,7 @@ RigelAI is a C#-based Telegram bot powered by Google's Gemini LLM, capable of ha
 
 ## 🛠️ Features
 
-- ✅ Gemini 2.0 Flash / Pro Vision integration
+- ✅ Gemini Integration
 - ✅ Telegram.Bot 22.5.1 compatible
 - ✅ Modular services: `RigelChatService`, `ImageChatService`, `VoiceChatService`, `DocumentChatService`
 - ✅ Automatic persona injection
