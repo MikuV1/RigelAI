@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace RigelAI.Core
@@ -8,18 +9,26 @@ namespace RigelAI.Core
     {
         private static string? personaText;
 
-        // Load the persona text from file asynchronously
-        public static async Task<bool> LoadPersonaAsync(string filePath = "persona.txt")
+        public static async Task<bool> LoadPersonaAsync(string fileName = "persona.txt")
         {
             try
             {
-                if (!File.Exists(filePath))
+                var corePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+                var candidatePath = Path.Combine(corePath ?? ".", fileName);
+
+                if (!File.Exists(candidatePath))
                 {
-                    Console.WriteLine($"❌ Persona file not found at: {filePath}");
+                    candidatePath = Path.Combine(AppContext.BaseDirectory, fileName);
+                }
+
+                if (!File.Exists(candidatePath))
+                {
+                    Console.WriteLine($"❌ Persona file not found at: {candidatePath}");
                     return false;
                 }
 
-                personaText = await File.ReadAllTextAsync(filePath);
+                personaText = await File.ReadAllTextAsync(candidatePath);
                 return true;
             }
             catch (Exception ex)
@@ -29,7 +38,6 @@ namespace RigelAI.Core
             }
         }
 
-        // Get the loaded persona text
         public static string GetPersonaText()
         {
             return personaText ?? string.Empty;

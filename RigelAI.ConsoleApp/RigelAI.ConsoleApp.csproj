@@ -15,10 +15,4 @@
     <ProjectReference Include="..\RigelAI.Core\RigelAI.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="persona.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>
