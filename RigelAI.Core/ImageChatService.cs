@@ -1,49 +1,48 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using RigelAI.Core;
 
 namespace RigelAI.Core
 {
     public class ImageChatService
     {
-        private readonly RigelChatService _rigelChatService;
+        private readonly RigelChatService _chatService;
 
-        public ImageChatService(RigelChatService rigelChatService)
+        public ImageChatService(RigelChatService chatService)
         {
-            _rigelChatService = rigelChatService;
+            _chatService = chatService;
         }
 
-        public async Task<string> HandleImageAsync(long userId, byte[] imageBytes, string userPrompt)
+        public async Task<string> HandleImageAsync(long groupId, long userId, byte[] imageData, string prompt)
         {
-            if (imageBytes == null || imageBytes.Length == 0)
-                return "❌ Image data is empty.";
+            var groupHistory = _chatService.GetOrCreateGroupHistory(groupId);
+            var userHistory = _chatService.GetOrCreateUserHistory(userId);
 
-            string base64Image = Convert.ToBase64String(imageBytes);
-
-            var imagePart = new
-            {
-                inlineData = new
-                {
-                    mimeType = "image/png", // Change this if the format is different
-                    data = base64Image
-                }
-            };
-
-            var conversationHistory = _rigelChatService.GetUserHistory(userId);
-
-            conversationHistory.Add(new
+            // Add image (as base64) and prompt to both histories
+            groupHistory.Add(new
             {
                 role = "user",
-                parts = new object[]
-                {
-                    new { text = userPrompt },
-                    imagePart
-                }
+                parts = new[] { new { text = prompt }, new { text = Convert.ToBase64String(imageData) } }
+            });
+            userHistory.Add(new
+            {
+                role = "user",
+                parts = new[] { new { text = prompt }, new { text = Convert.ToBase64String(imageData) } }
             });
 
-            return await _rigelChatService.GetResponseFromHistoryAsync(userId, conversationHistory);
+            var response = await GeminiClient.ChatWithPartsAsync(groupHistory);
+
+            groupHistory.Add(new
+            {
+                role = "model",
+                parts = new[] { new { text = response } }
+            });
+            userHistory.Add(new
+            {
+                role = "model",
+                parts = new[] { new { text = response } }
+            });
+
+            return response;
         }
     }
 }

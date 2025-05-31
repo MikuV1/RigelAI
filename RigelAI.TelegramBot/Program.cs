@@ -39,7 +39,19 @@ class Program
 
         // Start receiving updates
         BotClient.StartReceiving(
-            updateHandler: async (bot, update, token) => await router.HandleUpdateAsync(update, token),
+            updateHandler: async (bot, update, token) =>
+            {
+                if (update.Message != null)
+                {
+                    Console.WriteLine("🔔 Update received:");
+                    Console.WriteLine($"  - ChatId: {update.Message.Chat.Id}");
+                    Console.WriteLine($"  - ChatType: {update.Message.Chat.Type}");
+                    Console.WriteLine($"  - From: {update.Message.From?.Username ?? "unknown"} ({update.Message.From?.Id})");
+                    Console.WriteLine($"  - Text/Caption: {update.Message.Text ?? update.Message.Caption}");
+                }
+
+                await router.HandleUpdateAsync(update, token);
+            },
             errorHandler: HandleErrorAsync,
             receiverOptions: new ReceiverOptions
             {
@@ -50,6 +62,7 @@ class Program
 
         var me = await BotClient.SendRequest(new Telegram.Bot.Requests.GetMeRequest(), cts.Token);
         Console.WriteLine($"🤖 Bot started: @{me.Username}");
+        Console.WriteLine("Press any key to exit...");
         Console.ReadKey();
 
         cts.Cancel();
@@ -57,7 +70,7 @@ class Program
 
     static Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken token)
     {
-        Console.WriteLine($"Telegram Bot Error: {exception.Message}");
+        Console.WriteLine($"❌ Telegram Bot Error: {exception.Message}");
         return Task.CompletedTask;
     }
 }

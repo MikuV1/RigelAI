@@ -13,32 +13,36 @@ namespace RigelAI.Core
             _chatService = chatService;
         }
 
-        public async Task<string> HandleVoiceAsync(long userId, byte[] audioBytes)
+        public async Task<string> HandleVoiceAsync(long groupId, long userId, byte[] voiceData)
         {
-            if (audioBytes == null || audioBytes.Length == 0)
-                return "❌ Voice data is empty.";
+            var groupHistory = _chatService.GetOrCreateGroupHistory(groupId);
+            var userHistory = _chatService.GetOrCreateUserHistory(userId);
 
-            string base64Audio = Convert.ToBase64String(audioBytes);
-
-            var conversation = _chatService.GetUserHistory(userId);
-
-            conversation.Add(new
+            groupHistory.Add(new
             {
                 role = "user",
-                parts = new object[]
-                {
-                    new
-                    {
-                        inline_data = new
-                        {
-                            mime_type = "audio/ogg",
-                            data = base64Audio
-                        }
-                    }
-                }
+                parts = new[] { new { text = Convert.ToBase64String(voiceData) } }
+            });
+            userHistory.Add(new
+            {
+                role = "user",
+                parts = new[] { new { text = Convert.ToBase64String(voiceData) } }
             });
 
-            return await _chatService.GetResponseFromHistoryAsync(userId, conversation);
+            var response = await GeminiClient.ChatWithPartsAsync(groupHistory);
+
+            groupHistory.Add(new
+            {
+                role = "model",
+                parts = new[] { new { text = response } }
+            });
+            userHistory.Add(new
+            {
+                role = "model",
+                parts = new[] { new { text = response } }
+            });
+
+            return response;
         }
     }
 }

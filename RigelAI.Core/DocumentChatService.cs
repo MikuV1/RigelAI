@@ -1,88 +1,53 @@
-﻿using DocumentFormat.OpenXml.Packaging;
-using iText.Kernel.Pdf;
-using iText.Kernel.Pdf.Canvas.Parser;
-using RigelAI.Core;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Reflection.PortableExecutable;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace RigelAI.Core
 {
     public class DocumentChatService
     {
-        private readonly RigelChatService _rigelChatService;
+        private readonly RigelChatService _chatService;
 
-        public DocumentChatService(RigelChatService rigelChatService)
+        public DocumentChatService(RigelChatService chatService)
         {
-            _rigelChatService = rigelChatService;
+            _chatService = chatService;
         }
 
-        public async Task<string> HandleDocumentAsync(long userId, Stream fileStream, string fileName, string prompt)
+        public async Task<string> HandleDocumentAsync(long groupId, long userId, Stream documentStream, string fileName, string prompt)
         {
-            if (fileStream == null || !fileStream.CanRead)
-                return "❌ Invalid file stream.";
+            using var memoryStream = new MemoryStream();
+            await documentStream.CopyToAsync(memoryStream);
+            var fileBytes = memoryStream.ToArray();
 
-            try
+            var groupHistory = _chatService.GetOrCreateGroupHistory(groupId);
+            var userHistory = _chatService.GetOrCreateUserHistory(userId);
+
+            groupHistory.Add(new
             {
-                string extension = Path.GetExtension(fileName).ToLowerInvariant();
-                string extractedText = extension switch
-                {
-                    ".pdf" => ExtractTextFromPdf(fileStream),
-                    ".docx" => ExtractTextFromDocx(fileStream),
-                    ".txt" => ExtractTextFromTxt(fileStream),
-                    _ => null
-                };
-
-                if (string.IsNullOrWhiteSpace(extractedText))
-                    return "⚠️ Unsupported or unreadable document.";
-
-                string combinedMessage = $"{prompt}\n\n{extractedText}";
-                return await _rigelChatService.GetResponseAsync(userId, combinedMessage);
-            }
-            catch (Exception ex)
+                role = "user",
+                parts = new[] { new { text = prompt }, new { text = $"Document: {fileName}" }, new { text = Convert.ToBase64String(fileBytes) } }
+            });
+            userHistory.Add(new
             {
-                return $"❌ Failed to process document: {ex.Message}";
-            }
-        }
+                role = "user",
+                parts = new[] { new { text = prompt }, new { text = $"Document: {fileName}" }, new { text = Convert.ToBase64String(fileBytes) } }
+            });
 
-        private string ExtractTextFromPdf(Stream pdfStream)
-        {
-            using var reader = new PdfReader(pdfStream);
-            using var pdfDoc = new PdfDocument(reader);
-            var text = new StringBuilder();
+            var response = await GeminiClient.ChatWithPartsAsync(groupHistory);
 
-            for (int i = 1; i <= pdfDoc.GetNumberOfPages(); i++)
+            groupHistory.Add(new
             {
-                var page = pdfDoc.GetPage(i);
-                text.AppendLine(PdfTextExtractor.GetTextFromPage(page));
-            }
-
-            return text.ToString().Trim();
-        }
-
-        private string ExtractTextFromDocx(Stream docxStream)
-        {
-            using var mem = new MemoryStream();
-            docxStream.CopyTo(mem);
-            mem.Position = 0;
-
-            var sb = new StringBuilder();
-            using var doc = WordprocessingDocument.Open(mem, false);
-            var body = doc.MainDocumentPart?.Document?.Body;
-            if (body != null)
+                role = "model",
+                parts = new[] { new { text = response } }
+            });
+            userHistory.Add(new
             {
-                sb.AppendLine(body.InnerText);
-            }
+                role = "model",
+                parts = new[] { new { text = response } }
+            });
 
-            return sb.ToString().Trim();
-        }
-
-        private string ExtractTextFromTxt(Stream txtStream)
-        {
-            using var reader = new StreamReader(txtStream);
-            return reader.ReadToEnd().Trim();
+            return response;
         }
     }
 }

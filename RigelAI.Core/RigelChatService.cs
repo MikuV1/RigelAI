@@ -7,6 +7,7 @@ namespace RigelAI.Core
     public class RigelChatService
     {
         private static readonly ConcurrentDictionary<long, List<object>> UserConversations = new();
+        private static readonly ConcurrentDictionary<long, List<object>> GroupConversations = new();
         private string personaText = "";
 
         public async Task<bool> InitializeAsync(string personaFilePath = "persona.txt")
@@ -19,9 +20,9 @@ namespace RigelAI.Core
             return loaded;
         }
 
-        public async Task<string> GetResponseAsync(long userId, string userMessage)
+        public async Task<string> GetPrivateResponseAsync(long userId, string userMessage)
         {
-            var history = GetUserHistory(userId);
+            var history = GetOrCreateUserHistory(userId);
 
             history.Add(new
             {
@@ -43,15 +44,35 @@ namespace RigelAI.Core
             return reply;
         }
 
-        public async Task<string> GetResponseFromHistoryAsync(long userId, List<object> updatedHistory)
+        public async Task<string> GetGroupResponseAsync(long groupId, long userId, string userMessage)
         {
-            UserConversations[userId] = updatedHistory;
+            var groupHistory = GetOrCreateGroupHistory(groupId);
+            var userHistory = GetOrCreateUserHistory(userId);
 
-            var reply = await GeminiClient.ChatWithPartsAsync(updatedHistory);
+            // Add to group history
+            groupHistory.Add(new
+            {
+                role = "user",
+                parts = new[] { new { text = userMessage } }
+            });
+
+            // Also save to personal user history
+            userHistory.Add(new
+            {
+                role = "user",
+                parts = new[] { new { text = userMessage } }
+            });
+
+            var reply = await GeminiClient.ChatAsync(userMessage, groupHistory);
 
             if (!string.IsNullOrWhiteSpace(reply))
             {
-                updatedHistory.Add(new
+                groupHistory.Add(new
+                {
+                    role = "model",
+                    parts = new[] { new { text = reply } }
+                });
+                userHistory.Add(new
                 {
                     role = "model",
                     parts = new[] { new { text = reply } }
@@ -61,7 +82,25 @@ namespace RigelAI.Core
             return reply;
         }
 
-        public List<object> GetUserHistory(long userId)
+        public List<object> GetOrCreateGroupHistory(long groupId)
+        {
+            // Only inject persona once, when group history is first created
+            return GroupConversations.GetOrAdd(groupId, id =>
+            {
+                var history = new List<object>();
+                if (!string.IsNullOrWhiteSpace(personaText))
+                {
+                    history.Add(new
+                    {
+                        role = "user",
+                        parts = new[] { new { text = personaText } }
+                    });
+                }
+                return history;
+            });
+        }
+
+        public List<object> GetOrCreateUserHistory(long userId)
         {
             return UserConversations.GetOrAdd(userId, id =>
             {

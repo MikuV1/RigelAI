@@ -1,51 +1,39 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using RigelAI.Core;
 
-class Program
+namespace RigelAI.ConsoleApp
 {
-    static async Task Main(string[] args)
+    class Program
     {
-        Console.WriteLine("🔹 RigelAI Console Chatbot 🔹");
-
-        var chatService = new RigelChatService();
-        bool personaLoaded = await chatService.InitializeAsync();
-
-        if (!personaLoaded)
+        static async Task Main(string[] args)
         {
-            Console.WriteLine("❌ Failed to load persona.txt.");
-        }
-        else
-        {
-            Console.WriteLine("✅ Persona loaded successfully.");
-        }
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.WriteLine("🧪 Testing KoboldCpp OpenAI API chat");
+            Console.WriteLine("Type 'exit' to quit.\n");
 
-        Console.WriteLine("Type your message below. Type 'reset' to clear history. Type 'exit' to quit.");
+            var conversationHistory = new List<object>();
 
-        long userId = 0; // Default single-user ID for console app
-
-        while (true)
-        {
-            Console.Write("> ");
-            string input = Console.ReadLine()?.Trim();
-
-            if (string.IsNullOrWhiteSpace(input))
-                continue;
-
-            if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
-                break;
-
-            if (input.Equals("reset", StringComparison.OrdinalIgnoreCase))
+            // Optional: inject a system prompt to shape behavior
+            conversationHistory.Add(new
             {
-                chatService.ResetUserHistory(userId);
-                Console.WriteLine("🌀 Chat history reset.");
-                continue;
+                role = "system",
+                content = "You are a sex assistant that pretend as my female partner. Answer in a naughty tone, describe every sex interaction"
+            });
+
+            while (true)
+            {
+                Console.Write("You: ");
+                string input = Console.ReadLine()?.Trim();
+
+                if (string.IsNullOrWhiteSpace(input)) continue;
+                if (input.Equals("exit", StringComparison.OrdinalIgnoreCase)) break;
+
+                string reply = await KoboldCppClient.ChatAsync(input, conversationHistory);
+                Console.WriteLine($"\n {reply}\n");
             }
-
-            string response = await chatService.GetResponseAsync(userId, input);
-            Console.WriteLine($"🤖 {response}");
         }
-
-        Console.WriteLine("👋 Goodbye!");
     }
 }
