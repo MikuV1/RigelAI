@@ -17,19 +17,24 @@ namespace RigelAI.Core
             client = clientInstance;
         }
 
+        /// <summary>
+        /// Normal text-based chat. Adds the text as a single part.
+        /// </summary>
         public static async Task<string> ChatAsync(string userMessage, List<object> conversationHistory)
+        {
+            return await ChatWithPartsAsync(AppendTextPart(conversationHistory, userMessage));
+        }
+
+        /// <summary>
+        /// General multimodal chat, expects conversationHistory to already have the multimodal parts.
+        /// </summary>
+        public static async Task<string> ChatWithPartsAsync(List<object> conversationHistory)
         {
             var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
             if (string.IsNullOrEmpty(apiKey))
                 return "❌ API key missing.";
 
             var endpoint = $"https://generativelanguage.googleapis.com/v1/models/{Model}:generateContent?key={apiKey}";
-
-            conversationHistory.Add(new
-            {
-                role = "user",
-                parts = new[] { new { text = userMessage } }
-            });
 
             var payload = new
             {
@@ -72,41 +77,17 @@ namespace RigelAI.Core
             }
         }
 
-        public static async Task<string> ChatWithPartsAsync(List<object> conversationHistory)
+        /// <summary>
+        /// Helper to add a text part to conversation history.
+        /// </summary>
+        private static List<object> AppendTextPart(List<object> history, string text)
         {
-            var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
-            if (string.IsNullOrEmpty(apiKey))
-                return "❌ API key missing.";
-
-            var endpoint = $"https://generativelanguage.googleapis.com/v1/models/{Model}:generateContent?key={apiKey}";
-
-            var payload = new
+            history.Add(new
             {
-                contents = conversationHistory
-            };
-
-            var json = JsonConvert.SerializeObject(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            try
-            {
-                var response = await client.PostAsync(endpoint, content);
-                var responseString = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return $"❌ Gemini API error: {response.StatusCode}\nDetails: {responseString}";
-                }
-
-                dynamic result = JsonConvert.DeserializeObject(responseString);
-                string botReply = result?.candidates?[0]?.content?.parts?[0]?.text?.ToString();
-
-                return !string.IsNullOrWhiteSpace(botReply) ? botReply : "⚠️ Empty response.";
-            }
-            catch (Exception ex)
-            {
-                return $"❌ Error: {ex.Message}";
-            }
+                role = "user",
+                parts = new[] { new { text = text } }
+            });
+            return history;
         }
     }
 }

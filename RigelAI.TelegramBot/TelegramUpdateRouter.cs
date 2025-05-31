@@ -47,40 +47,51 @@ namespace RigelAI.TelegramBot
             var userId = message.From?.Id ?? 0;
             var chatId = message.Chat.Id;
             var chatType = message.Chat.Type;
+            var text = message.Text ?? message.Caption ?? "";
 
             string response = null;
             bool shouldRespond = chatType == ChatType.Private;
 
+            // Determine if it's a file/image/voice command (always allowed)
+            bool isFileCommand = text.StartsWith("/image", StringComparison.OrdinalIgnoreCase)
+                              || text.StartsWith("/file", StringComparison.OrdinalIgnoreCase)
+                              || text.StartsWith("/voice", StringComparison.OrdinalIgnoreCase);
+
             // Group detection logic
             if (chatType == ChatType.Group || chatType == ChatType.Supergroup)
             {
-                var text = message.Text ?? message.Caption ?? "";
-
-                if (text.StartsWith("!ar ", StringComparison.OrdinalIgnoreCase))
+                if (!isFileCommand)
                 {
-                    shouldRespond = true;
-                    text = text.Substring(4).Trim();
-                }
-                else if (message.Entities != null)
-                {
-                    foreach (var entity in message.Entities)
+                    if (text.StartsWith("!ar ", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (entity.Type == MessageEntityType.Mention &&
-                            message.Text.Substring(entity.Offset, entity.Length)
-                                   .Equals($"@{(await _botClient.SendRequest(new GetMeRequest(), cancellationToken)).Username}", StringComparison.OrdinalIgnoreCase))
+                        shouldRespond = true;
+                        text = text.Substring(4).Trim();
+                    }
+                    else if (message.Entities != null)
+                    {
+                        foreach (var entity in message.Entities)
+                        {
+                            if (entity.Type == MessageEntityType.Mention &&
+                                message.Text.Substring(entity.Offset, entity.Length)
+                                       .Equals($"@{(await _botClient.SendRequest(new GetMeRequest(), cancellationToken)).Username}", StringComparison.OrdinalIgnoreCase))
+                            {
+                                shouldRespond = true;
+                                break;
+                            }
+                        }
+                    }
+                    else if (message.ReplyToMessage != null)
+                    {
+                        var me = await _botClient.SendRequest(new GetMeRequest(), cancellationToken);
+                        if (message.ReplyToMessage.From?.Id == me.Id)
                         {
                             shouldRespond = true;
-                            break;
                         }
                     }
                 }
-                else if (message.ReplyToMessage != null)
+                else
                 {
-                    var me = await _botClient.SendRequest(new GetMeRequest(), cancellationToken);
-                    if (message.ReplyToMessage.From?.Id == me.Id)
-                    {
-                        shouldRespond = true;
-                    }
+                    shouldRespond = true;
                 }
 
                 message.Text = text;
@@ -96,6 +107,17 @@ namespace RigelAI.TelegramBot
             {
                 var file = await _botClient.SendRequest(
                     new GetFileRequest { FileId = message.Voice.FileId },
+                    cancellationToken);
+                var fileUrl = $"https://api.telegram.org/file/bot{_botToken}/{file.FilePath}";
+                var audioBytes = await _httpClient.GetByteArrayAsync(fileUrl);
+
+                response = await _voiceService.HandleVoiceAsync(chatId, userId, audioBytes);
+            }
+            // 1️⃣-bis Audio (when mic recording is saved as audio file)
+            else if (message.Audio != null)
+            {
+                var file = await _botClient.SendRequest(
+                    new GetFileRequest { FileId = message.Audio.FileId },
                     cancellationToken);
                 var fileUrl = $"https://api.telegram.org/file/bot{_botToken}/{file.FilePath}";
                 var audioBytes = await _httpClient.GetByteArrayAsync(fileUrl);
@@ -131,7 +153,7 @@ namespace RigelAI.TelegramBot
 
                 response = await _docService.HandleDocumentAsync(chatId, userId, fileStream, message.Document.FileName, prompt);
             }
-            // 4️⃣ Fallback for plain text (like !ar hello!)
+            // 4️⃣ Fallback for plain text
             else if (!string.IsNullOrWhiteSpace(messageText))
             {
                 if (chatType == ChatType.Private)
@@ -144,14 +166,14 @@ namespace RigelAI.TelegramBot
                 }
             }
 
-            // 5️⃣ Send the response (in the correct topic, if any)
+            // 5️⃣ Send response
             if (!string.IsNullOrWhiteSpace(response))
             {
                 await _botClient.SendRequest(
                     new SendMessageRequest
                     {
                         ChatId = chatId,
-                        MessageThreadId = message.MessageThreadId, // 🟩 ensure reply in same topic
+                        MessageThreadId = message.MessageThreadId,
                         Text = response
                     },
                     cancellationToken

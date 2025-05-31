@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RigelAI.Core
@@ -17,30 +18,38 @@ namespace RigelAI.Core
             var groupHistory = _chatService.GetOrCreateGroupHistory(groupId);
             var userHistory = _chatService.GetOrCreateUserHistory(userId);
 
-            // Add image (as base64) and prompt to both histories
-            groupHistory.Add(new
+            string base64Image = Convert.ToBase64String(imageData);
+
+            // Gemini expects inlineData for images
+            var multimodalPart = new
             {
                 role = "user",
-                parts = new[] { new { text = prompt }, new { text = Convert.ToBase64String(imageData) } }
-            });
-            userHistory.Add(new
-            {
-                role = "user",
-                parts = new[] { new { text = prompt }, new { text = Convert.ToBase64String(imageData) } }
-            });
+                parts = new object[]
+                {
+                    new {
+                        inlineData = new {
+                            mimeType = "image/jpeg",
+                            data = base64Image
+                        }
+                    },
+                    new {
+                        text = prompt
+                    }
+                }
+            };
+
+            groupHistory.Add(multimodalPart);
+            userHistory.Add(multimodalPart);
 
             var response = await GeminiClient.ChatWithPartsAsync(groupHistory);
 
-            groupHistory.Add(new
+            var modelPart = new
             {
                 role = "model",
                 parts = new[] { new { text = response } }
-            });
-            userHistory.Add(new
-            {
-                role = "model",
-                parts = new[] { new { text = response } }
-            });
+            };
+            groupHistory.Add(modelPart);
+            userHistory.Add(modelPart);
 
             return response;
         }

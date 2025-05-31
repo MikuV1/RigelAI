@@ -18,29 +18,37 @@ namespace RigelAI.Core
             var groupHistory = _chatService.GetOrCreateGroupHistory(groupId);
             var userHistory = _chatService.GetOrCreateUserHistory(userId);
 
-            groupHistory.Add(new
+            string base64Audio = Convert.ToBase64String(voiceData);
+
+            var multimodalPart = new
             {
                 role = "user",
-                parts = new[] { new { text = Convert.ToBase64String(voiceData) } }
-            });
-            userHistory.Add(new
-            {
-                role = "user",
-                parts = new[] { new { text = Convert.ToBase64String(voiceData) } }
-            });
+                parts = new object[]
+                {
+                    new {
+                        inlineData = new {
+                            mimeType = "audio/ogg",
+                            data = base64Audio
+                        }
+                    },
+                    new {
+                        text = "Please transcribe or respond to this voice message."
+                    }
+                }
+            };
+
+            groupHistory.Add(multimodalPart);
+            userHistory.Add(multimodalPart);
 
             var response = await GeminiClient.ChatWithPartsAsync(groupHistory);
 
-            groupHistory.Add(new
+            var modelPart = new
             {
                 role = "model",
                 parts = new[] { new { text = response } }
-            });
-            userHistory.Add(new
-            {
-                role = "model",
-                parts = new[] { new { text = response } }
-            });
+            };
+            groupHistory.Add(modelPart);
+            userHistory.Add(modelPart);
 
             return response;
         }

@@ -14,38 +14,44 @@ namespace RigelAI.Core
             _chatService = chatService;
         }
 
-        public async Task<string> HandleDocumentAsync(long groupId, long userId, Stream documentStream, string fileName, string prompt)
+        public async Task<string> HandleDocumentAsync(long groupId, long userId, Stream fileStream, string fileName, string prompt)
         {
-            using var memoryStream = new MemoryStream();
-            await documentStream.CopyToAsync(memoryStream);
-            var fileBytes = memoryStream.ToArray();
-
             var groupHistory = _chatService.GetOrCreateGroupHistory(groupId);
             var userHistory = _chatService.GetOrCreateUserHistory(userId);
 
-            groupHistory.Add(new
+            using var memoryStream = new MemoryStream();
+            await fileStream.CopyToAsync(memoryStream);
+            string base64File = Convert.ToBase64String(memoryStream.ToArray());
+
+            var multimodalPart = new
             {
                 role = "user",
-                parts = new[] { new { text = prompt }, new { text = $"Document: {fileName}" }, new { text = Convert.ToBase64String(fileBytes) } }
-            });
-            userHistory.Add(new
-            {
-                role = "user",
-                parts = new[] { new { text = prompt }, new { text = $"Document: {fileName}" }, new { text = Convert.ToBase64String(fileBytes) } }
-            });
+                parts = new object[]
+                {
+                    new {
+                        inlineData = new {
+                            mimeType = "application/pdf", // adjust for different file types!
+                            data = base64File
+                        }
+                    },
+                    new {
+                        text = prompt
+                    }
+                }
+            };
+
+            groupHistory.Add(multimodalPart);
+            userHistory.Add(multimodalPart);
 
             var response = await GeminiClient.ChatWithPartsAsync(groupHistory);
 
-            groupHistory.Add(new
+            var modelPart = new
             {
                 role = "model",
                 parts = new[] { new { text = response } }
-            });
-            userHistory.Add(new
-            {
-                role = "model",
-                parts = new[] { new { text = response } }
-            });
+            };
+            groupHistory.Add(modelPart);
+            userHistory.Add(modelPart);
 
             return response;
         }
