@@ -17,17 +17,11 @@ namespace RigelAI.Core
             client = clientInstance;
         }
 
-        /// <summary>
-        /// Normal text-based chat. Adds the text as a single part.
-        /// </summary>
         public static async Task<string> ChatAsync(string userMessage, List<object> conversationHistory)
         {
             return await ChatWithPartsAsync(AppendTextPart(conversationHistory, userMessage));
         }
 
-        /// <summary>
-        /// General multimodal chat, expects conversationHistory to already have the multimodal parts.
-        /// </summary>
         public static async Task<string> ChatWithPartsAsync(List<object> conversationHistory)
         {
             var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
@@ -36,12 +30,12 @@ namespace RigelAI.Core
 
             var endpoint = $"https://generativelanguage.googleapis.com/v1/models/{Model}:generateContent?key={apiKey}";
 
-            var payload = new
-            {
-                contents = conversationHistory
-            };
-
+            var payload = new { contents = conversationHistory };
             var json = JsonConvert.SerializeObject(payload);
+
+            // 🟢 Estimate token usage
+            int inputTokenEstimate = EstimateTokenCount(json);
+
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             try
@@ -56,6 +50,13 @@ namespace RigelAI.Core
 
                 dynamic result = JsonConvert.DeserializeObject(responseString);
                 string botReply = result?.candidates?[0]?.content?.parts?[0]?.text?.ToString();
+
+                // 🟢 Estimate tokens in the reply
+                int replyTokenEstimate = EstimateTokenCount(botReply ?? "");
+
+                // 🟢 Log estimated tokens
+                Console.WriteLine($"[GeminiClient] Estimated input tokens: {inputTokenEstimate}");
+                Console.WriteLine($"[GeminiClient] Estimated output tokens: {replyTokenEstimate}");
 
                 if (!string.IsNullOrWhiteSpace(botReply))
                 {
@@ -88,6 +89,14 @@ namespace RigelAI.Core
                 parts = new[] { new { text = text } }
             });
             return history;
+        }
+
+        /// <summary>
+        /// Rough estimate: tokens ~ (characters / 4).
+        /// </summary>
+        private static int EstimateTokenCount(string text)
+        {
+            return (text.Length / 4) + 1; // +1 for small overhead
         }
     }
 }
