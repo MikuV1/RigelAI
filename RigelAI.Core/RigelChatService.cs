@@ -24,6 +24,22 @@ namespace RigelAI.Core
         {
             var history = GetOrCreateUserHistory(userId);
 
+            // Summarize if too long
+            if (history.Count >= 80)
+            {
+                var toSummarize = history.GetRange(1, 20);
+                var summary = await KangSummary.SummarizeAsync(toSummarize);
+
+                history.RemoveRange(1, 20);
+                history.Insert(1, new
+                {
+                    role = "user",
+                    parts = new[] { new { text = summary } }
+                });
+
+                Console.WriteLine($"[RigelChatService] Summarized 20 oldest messages for user {userId}.");
+            }
+
             history.Add(new
             {
                 role = "user",
@@ -49,7 +65,22 @@ namespace RigelAI.Core
             var groupHistory = GetOrCreateGroupHistory(groupId);
             var userHistory = GetOrCreateUserHistory(userId);
 
-            // Add to group history
+            // Summarize group history if too long
+            if (groupHistory.Count >= 80)
+            {
+                var toSummarize = groupHistory.GetRange(1, 20);
+                var summary = await KangSummary.SummarizeAsync(toSummarize);
+
+                groupHistory.RemoveRange(1, 20);
+                groupHistory.Insert(1, new
+                {
+                    role = "user",
+                    parts = new[] { new { text = summary } }
+                });
+
+                Console.WriteLine($"[RigelChatService] Summarized 20 oldest group messages for group {groupId}.");
+            }
+
             groupHistory.Add(new
             {
                 role = "user",
@@ -72,6 +103,8 @@ namespace RigelAI.Core
                     role = "model",
                     parts = new[] { new { text = reply } }
                 });
+
+                // Save to user's personal history too
                 userHistory.Add(new
                 {
                     role = "model",
@@ -84,7 +117,6 @@ namespace RigelAI.Core
 
         public List<object> GetOrCreateGroupHistory(long groupId)
         {
-            // Only inject persona once, when group history is first created
             return GroupConversations.GetOrAdd(groupId, id =>
             {
                 var history = new List<object>();

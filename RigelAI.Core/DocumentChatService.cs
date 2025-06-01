@@ -30,7 +30,7 @@ namespace RigelAI.Core
                 {
                     new {
                         inlineData = new {
-                            mimeType = "application/pdf", // adjust for different file types!
+                            mimeType = "application/pdf",
                             data = base64File
                         }
                     },
