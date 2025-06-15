@@ -20,7 +20,7 @@ namespace RigelAI.ConsoleApp
             conversationHistory.Add(new
             {
                 role = "system",
-                content = "You are a sex assistant that pretend as my female partner. Answer in a naughty tone, describe every sex interaction"
+                content = "you are an friend that always so friendly"
             });
 
             while (true)

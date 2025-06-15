@@ -24,20 +24,19 @@ namespace RigelAI.Core
         {
             var history = GetOrCreateUserHistory(userId);
 
-            // Summarize if too long
-            if (history.Count >= 80)
+            if (history.Count >= 160)
             {
-                var toSummarize = history.GetRange(1, 20);
+                var toSummarize = history.GetRange(1, 40);
                 var summary = await KangSummary.SummarizeAsync(toSummarize);
 
-                history.RemoveRange(1, 20);
+                history.RemoveRange(1, 40);
                 history.Insert(1, new
                 {
                     role = "user",
                     parts = new[] { new { text = summary } }
                 });
 
-                Console.WriteLine($"[RigelChatService] Summarized 20 oldest messages for user {userId}.");
+                Console.WriteLine($"[RigelChatService] Summarized 40 oldest messages for user {userId}.");
             }
 
             history.Add(new
@@ -60,34 +59,32 @@ namespace RigelAI.Core
             return reply;
         }
 
-        public async Task<string> GetGroupResponseAsync(long groupId, long userId, string userMessage)
+        public async Task<string> GetGroupResponseAsync(long groupId, long userId, string userMessage, string senderName)
         {
             var groupHistory = GetOrCreateGroupHistory(groupId);
             var userHistory = GetOrCreateUserHistory(userId);
 
-            // Summarize group history if too long
-            if (groupHistory.Count >= 80)
+            if (groupHistory.Count >= 160)
             {
-                var toSummarize = groupHistory.GetRange(1, 20);
+                var toSummarize = groupHistory.GetRange(1, 40);
                 var summary = await KangSummary.SummarizeAsync(toSummarize);
 
-                groupHistory.RemoveRange(1, 20);
+                groupHistory.RemoveRange(1, 40);
                 groupHistory.Insert(1, new
                 {
                     role = "user",
                     parts = new[] { new { text = summary } }
                 });
 
-                Console.WriteLine($"[RigelChatService] Summarized 20 oldest group messages for group {groupId}.");
+                Console.WriteLine($"[RigelChatService] Summarized 40 oldest group messages for group {groupId}.");
             }
 
             groupHistory.Add(new
             {
                 role = "user",
-                parts = new[] { new { text = userMessage } }
+                parts = new[] { new { text = $"[{senderName}]: {userMessage}" } }
             });
 
-            // Also save to personal user history
             userHistory.Add(new
             {
                 role = "user",
@@ -104,7 +101,6 @@ namespace RigelAI.Core
                     parts = new[] { new { text = reply } }
                 });
 
-                // Save to user's personal history too
                 userHistory.Add(new
                 {
                     role = "model",
@@ -151,7 +147,34 @@ namespace RigelAI.Core
 
         public void ResetUserHistory(long userId)
         {
-            UserConversations[userId] = new List<object>();
+            var history = new List<object>();
+            if (!string.IsNullOrWhiteSpace(personaText))
+            {
+                history.Add(new
+                {
+                    role = "user",
+                    parts = new[] { new { text = personaText } }
+                });
+            }
+            UserConversations[userId] = history;
+
+            Console.WriteLine($"[RigelChatService] Reset user history for {userId} (with persona re-injected).");
+        }
+
+        public void ResetGroupHistory(long groupId)
+        {
+            var history = new List<object>();
+            if (!string.IsNullOrWhiteSpace(personaText))
+            {
+                history.Add(new
+                {
+                    role = "user",
+                    parts = new[] { new { text = personaText } }
+                });
+            }
+            GroupConversations[groupId] = history;
+
+            Console.WriteLine($"[RigelChatService] Reset group history for {groupId} (with persona re-injected).");
         }
     }
 }
