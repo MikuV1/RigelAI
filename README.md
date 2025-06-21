@@ -18,21 +18,17 @@ RigelAI is a C#-based Telegram bot powered by Google's Gemini LLM, capable of ha
 - ✅ Automatic persona injection
 - ✅ Per-user conversation memory
 - ✅ .NET 9.0 multi-project solution
-- ✅ Unit tests for GeminiClient
+- ✅ Unit tests for `GeminiClient` and `RigelChatService`
 
 ---
 
 ## 🧱 Project Structure
-
-```
 RigelAI/
 ├── RigelAI.Core/           # Core services and Gemini integration
 ├── RigelAI.ConsoleApp/     # Console interface for local testing
 ├── RigelAI.TelegramBot/    # Telegram bot entry point and router
 ├── RigelAI.Tests/          # xUnit test coverage
-└── persona.txt             # Customizable personality file
-```
-
+└── RigelAI.Core/persona.txt # Customizable personality file
 ---
 
 ## ⚙️ Environment Variables
@@ -49,19 +45,11 @@ Create a `.env` or configure environment variables:
 ## 🧪 How to Run
 
 ### Console App
-
-```bash
 cd RigelAI.ConsoleApp
 dotnet run
-```
-
 ### Telegram Bot
-
-```bash
 cd RigelAI.TelegramBot
 dotnet run
-```
-
 ---
 
 ## 🗃️ Supported Commands
@@ -81,6 +69,7 @@ dotnet run
 - 🔊 Whisper voice transcription  
 - 🧠 Persistent memory layer  
 - 🌍 Deployment-ready packaging  
+- 🧪 Enhanced unit test coverage for all services
 
 ---
 
