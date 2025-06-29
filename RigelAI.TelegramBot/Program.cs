@@ -8,6 +8,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using RigelAI.Core;
 using RigelAI.TelegramBot;
+using DotNetEnv;
 
 class Program
 {
@@ -15,6 +16,17 @@ class Program
 
     static async Task Main()
     {
+        // Centralized .env loading
+        try
+        {
+            DotNetEnv.Env.Load();
+            Console.WriteLine("✅ .env loaded successfully in TelegramBot Program.Main.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Failed to load .env in TelegramBot Program.Main: {ex.Message}");
+        }
+
         var token = Environment.GetEnvironmentVariable("RIGEL_TELEGRAM_BOT_TOKEN");
         if (string.IsNullOrWhiteSpace(token))
         {

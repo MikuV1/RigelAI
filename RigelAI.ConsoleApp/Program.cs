@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using RigelAI.Core;
+using DotNetEnv;
 
 namespace RigelAI.ConsoleApp
 {
@@ -10,6 +11,17 @@ namespace RigelAI.ConsoleApp
     {
         static async Task Main(string[] args)
         {
+            // Centralized .env loading
+            try
+            {
+                DotNetEnv.Env.Load();
+                Console.WriteLine("✅ .env loaded successfully in Program.Main.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ Failed to load .env in Program.Main: {ex.Message}");
+            }
+
             Console.OutputEncoding = Encoding.UTF8;
             Console.WriteLine("🧪 Testing KoboldCpp OpenAI API chat");
             Console.WriteLine("Type 'exit' to quit.\n");

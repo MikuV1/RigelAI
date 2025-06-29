@@ -11,6 +11,28 @@ namespace RigelAI.Core
     {
         private static HttpClient client = new HttpClient();
         private static readonly string Model = "gemini-2.5-flash";
+        private static string apiKey = null;
+
+        static GeminiClient()
+        {
+            try
+            {
+                // .env loading is now handled centrally
+                apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+                if (string.IsNullOrEmpty(apiKey))
+                {
+                    Console.WriteLine("❌ GEMINI_API_KEY is missing in environment variables or .env");
+                }
+                else
+                {
+                    Console.WriteLine("✅ GEMINI_API_KEY loaded successfully.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ Failed to load GEMINI_API_KEY: {ex.Message}");
+            }
+        }
 
         public static void SetHttpClient(HttpClient clientInstance)
         {
@@ -24,7 +46,6 @@ namespace RigelAI.Core
 
         public static async Task<string> ChatWithPartsAsync(List<object> conversationHistory)
         {
-            var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
             if (string.IsNullOrEmpty(apiKey))
                 return "❌ API key missing.";
 
@@ -32,9 +53,10 @@ namespace RigelAI.Core
 
             var payload = new { contents = conversationHistory };
             var json = JsonConvert.SerializeObject(payload);
-
-            // 🟢 Estimate token usage
             int inputTokenEstimate = EstimateTokenCount(json);
+            await Task.Delay(100); // 100ms pause
+
+
 
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -51,10 +73,8 @@ namespace RigelAI.Core
                 dynamic result = JsonConvert.DeserializeObject(responseString);
                 string botReply = result?.candidates?[0]?.content?.parts?[0]?.text?.ToString();
 
-                // 🟢 Estimate tokens in the reply
                 int replyTokenEstimate = EstimateTokenCount(botReply ?? "");
 
-                // 🟢 Log estimated tokens
                 Console.WriteLine($"[GeminiClient] Estimated input tokens: {inputTokenEstimate}");
                 Console.WriteLine($"[GeminiClient] Estimated output tokens: {replyTokenEstimate}");
 
@@ -78,9 +98,6 @@ namespace RigelAI.Core
             }
         }
 
-        /// <summary>
-        /// Helper to add a text part to conversation history.
-        /// </summary>
         private static List<object> AppendTextPart(List<object> history, string text)
         {
             history.Add(new
@@ -91,12 +108,9 @@ namespace RigelAI.Core
             return history;
         }
 
-        /// <summary>
-        /// Rough estimate: tokens ~ (characters / 4).
-        /// </summary>
         private static int EstimateTokenCount(string text)
         {
-            return (text.Length / 4) + 1; // +1 for small overhead
+            return (text.Length / 4) + 1;
         }
     }
 }
