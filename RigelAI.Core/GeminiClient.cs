@@ -10,7 +10,7 @@ namespace RigelAI.Core
     public static class GeminiClient
     {
         private static HttpClient client = new HttpClient();
-        private static readonly string Model = "gemini-2.0-flash-lite";
+        private static readonly string Model = "gemini-2.5-flash";
 
         public static void SetHttpClient(HttpClient clientInstance)
         {
